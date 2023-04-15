@@ -4,4 +4,3 @@ underthesea
 gensim
 surprise
 regex
-emoji
