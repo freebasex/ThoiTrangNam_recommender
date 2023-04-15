@@ -1,0 +1,6 @@
+streamlit
+pandas
+underthesea
+gensim
+surprise
+regex
