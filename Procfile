@@ -1,1 +1,1 @@
-web: sh setup.sh && streamlit run Launch_Page.py
+web: sh setup.sh && streamlit run P2_gensim.py
