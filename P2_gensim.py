@@ -4,19 +4,8 @@ from gensim import corpora, models, similarities
 from underthesea import word_tokenize, pos_tag, sent_tokenize
 import re
 import regex
-############################################################################################
-#def app():
-st.title("Content Based Filtering")
-Product = pd.read_csv('data_full_info_12_4_2023.csv', encoding="utf8", index_col=0)
-pd.set_option('display.max_colwidth', None) # need this option to make sure cell content is displayed in full
-Product['short_name'] = Product['product_name']
-product_map = Product.iloc[:,[0,-1]]
-product_list = product_map['short_name'].values
+import emoji
 
-
-############################################################################################
-
-# Define functions to use for both methods
 ##### TEXT PROCESSING #####
 def process_text(document):
     # Change to lower text
@@ -48,6 +37,68 @@ def process_text(document):
     stop_words = stop_words.split()  
     document = [[word[0] for word in document if not word[0] in stop_words]] 
     return document
+
+def clean_text(text):
+    text_clean = str(text).lower()
+    #Loại bỏ thông tin liên quan đến chi tiết như Xuất xứ, danh mục, kho hàng
+    if 'danh mục\n' in text_clean: 
+        text_clean = text_clean[text_clean.index("danh mục\n"):]
+    elif 'thông tin sản phẩm\n' in text_clean: 
+        text_clean = text_clean[text_clean.index("thông tin sản phẩm\n"):]
+    elif "mô tả sản phẩm\n" in text_clean: 
+        text_clean = text_clean[text_clean.index("mô tả sản phẩm\n"):]
+    elif 'danh mục\n' in text_clean:
+        text_clean = text_clean[text_clean.index("danh mục\n"):]
+    elif 'shopee\n' in text_clean:
+        text_clean = text_clean[text_clean.index("shopee\n"):]
+    elif 'xuất xứ\n' in text_clean:
+        text_clean = text_clean[text_clean.index("xuất xứ\n"):]
+    elif 'kho hàng\n' in text_clean:
+        text_clean = text_clean[text_clean.index("kho hàng\n"):]
+    elif 'thời trang nam\n' in text_clean:
+        text_clean = text_clean[text_clean.index("thời trang nam\n"):]
+    elif "\n\n" in text_clean: 
+        text_clean = text_clean[text_clean.index("\n\n") + 4:]
+    elif "\ngửi từ\n" in text_clean: 
+        text_clean = text_clean[text_clean.index("\ngửi từ\n") + len("\ngửi từ\n"):]
+    elif "\ngửi từ\n" in text_clean: 
+        text_clean = text_clean[text_clean.index("\ngửi từ\n") + len("\ngửi từ\n"):]
+    #Loại bỏ phần size
+    text_clean = re.sub(r"\nsize[^\n]*","",text_clean)
+
+    #Loại bỏ các hastag
+    text_clean = re.sub(r"#[^#]*","", text_clean)
+    #Loại bỏ các ký tự không hợp lệ
+    text_clean = re.sub(r"\n", " ", text_clean) 
+    text_clean = emoji.replace_emoji(text_clean)
+    text_clean = re.sub('[\.\:\,\-\-\-\+\d\!\%\...\.\"\*\>\<\^\&\/\[\]\(\)\=\~]',' ', text_clean)
+    #Loại bỏ các từ không cần thiết
+    text_clean = re.sub('\ss\s|\sm\s|\sl\s|\sxl|xxl|xxxl|xxxxl|2x1|3x1|4xl|size|\smm\s|\scm\s|\sm\s|\sg\s|\skg\s',' ', text_clean)
+    #Loại bỏ khoảng trắng thừa
+    text_clean = re.sub('\s+',' ', text_clean)
+    
+    text_clean = re.sub('[\s]{2,}', ' ', text_clean)
+    text_clean = re.sub('[\s]{3,}', ' ', text_clean)
+    text_clean = re.sub('^[\s]{1,}', '', text_clean)
+    text_clean = re.sub('[\s]{1,}$', '', text_clean)
+    text_clean = re.sub('[^\w\s]', '', text_clean)    
+    text_clean = re.sub(r'((http|https)\:\/\/)?[a-zA-Z0-9\.\/\?\:@\-_=#]+\.([a-zA-Z]){2,6}([a-zA-Z0-9\.\&\/\?\:@\-_=#])*', '',text_clean)
+    text_clean = re.sub('danh mục shopee thời trang nam', ' ', text_clean)
+    return text_clean
+############################################################################################
+#def app():
+st.title("Content Based Filtering")
+Product = pd.read_csv('data_full_info_12_4_2023.csv', encoding="utf8", index_col=0)
+pd.set_option('display.max_colwidth', None) # need this option to make sure cell content is displayed in full
+Product['short_name'] = Product['product_name'].apply(clean_text)
+
+product_map = Product.iloc[:,[0,-1]]
+product_list = product_map['short_name'].values
+
+
+############################################################################################
+
+# Define functions to use for both methods
 
 ##### TAKE URL OF AN IMAGE #####
 def fetch_image(idx):
